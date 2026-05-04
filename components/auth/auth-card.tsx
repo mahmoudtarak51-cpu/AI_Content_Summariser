@@ -10,12 +10,15 @@ type AuthCardProps = {
 export function AuthCard({ onSignedIn }: AuthCardProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setInfo(null);
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
@@ -23,7 +26,7 @@ export function AuthCard({ onSignedIn }: AuthCardProps) {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSigningIn(true);
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -42,7 +45,46 @@ export function AuthCard({ onSignedIn }: AuthCardProps) {
     } catch {
       setError("Unable to sign in right now. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsSigningIn(false);
+    }
+  }
+
+  async function handleSignUp() {
+    setError(null);
+    setInfo(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    setIsSigningUp(true);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || "Unable to sign up. Please try again.");
+        return;
+      }
+
+      setPassword("");
+
+      if (data.session) {
+        onSignedIn();
+        return;
+      }
+
+      setInfo("Account created. Check your email to confirm your account, then sign in.");
+    } catch {
+      setError("Unable to sign up right now. Please try again.");
+    } finally {
+      setIsSigningUp(false);
     }
   }
 
@@ -53,7 +95,7 @@ export function AuthCard({ onSignedIn }: AuthCardProps) {
         Use your email and password to access the summarizer.
       </p>
 
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={handleSignIn}>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="email">
             Email
@@ -94,9 +136,25 @@ export function AuthCard({ onSignedIn }: AuthCardProps) {
           </p>
         ) : null}
 
-        <button className="btn-primary w-full" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
+        {info ? (
+          <p className="text-sm text-slate-700" role="status">
+            {info}
+          </p>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-3">
+          <button className="btn-primary w-full" type="submit" disabled={isSigningIn || isSigningUp}>
+            {isSigningIn ? "Signing in..." : "Sign in"}
+          </button>
+          <button
+            className="btn-ghost w-full"
+            type="button"
+            onClick={() => void handleSignUp()}
+            disabled={isSigningIn || isSigningUp}
+          >
+            {isSigningUp ? "Signing up..." : "Sign up"}
+          </button>
+        </div>
       </form>
     </section>
   );

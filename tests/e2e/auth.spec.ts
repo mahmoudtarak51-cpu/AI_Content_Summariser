@@ -10,6 +10,7 @@ test.describe("Auth flow", () => {
     await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign up/i })).toBeVisible();
   });
 
   test("allows email/password sign-in and shows summarize controls", async ({
