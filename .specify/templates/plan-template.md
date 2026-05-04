@@ -3,35 +3,54 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit.plan` command. Keep every
+section concrete and scoped to the AI Topic Summarizer product.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+[Extract the primary user value, the technical approach, and any provider or UI
+constraints that materially affect delivery.]
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: TypeScript, Next.js, React, and the Vercel runtime
+versions used by the repository  
+**Primary Dependencies**: Next.js App Router, Supabase Auth, Brave Search
+integration, OpenRouter integration, PDF generation tooling  
+**Storage**: No permanent storage of generated summaries; temporary browser
+state only unless a feature explicitly justifies a short-lived transient store  
+**Testing**: Unit, integration, and end-to-end coverage for auth, summary
+generation, output modes, error handling, and PDF export  
+**Target Platform**: Responsive web app for modern desktop and mobile browsers  
+**Project Type**: Next.js web application with server-side API routes or server
+actions  
+**Performance Goals**: Clear progress feedback during generation and acceptable
+response times within third-party provider limits  
+**Constraints**: English only, authenticated access only, top 10 search
+results, server-side API keys only, approved OpenRouter free models only, no
+citations, no share action, no copy action  
+**Scale/Scope**: One topic at a time, five output modes, one downloadable PDF
+artifact per generated summary
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Server/client boundaries keep Brave Search and OpenRouter secrets on the
+      server only.
+- [ ] The feature requires Supabase-authenticated access before generation or
+      download behavior is available.
+- [ ] The plan preserves live search on the top 10 results and uses only the
+      approved model allowlist, with `openai/gpt-oss-120b:free` as default.
+- [ ] The design does not persist generated summaries beyond temporary runtime
+      state needed for rendering or PDF export.
+- [ ] The UI keeps the approved scope: English-only selector, short/long
+      control, five output modes, download button only, and no citations, share,
+      or copy actions.
+- [ ] Loading, empty, error, unauthorized, and rate-limited states are fully
+      specified for desktop and mobile layouts.
+- [ ] Validation covers all visible controls and at least one negative path for
+      summary generation and PDF export.
 
 ## Project Structure
 
@@ -39,60 +58,52 @@
 
 ```text
 specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+|-- plan.md
+|-- research.md
+|-- data-model.md
+|-- quickstart.md
+|-- contracts/
+`-- tasks.md
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+app/
+|-- api/
+|   |-- auth/
+|   |-- summarize/
+|   `-- download-pdf/
+|-- (marketing-or-app-routes)/
+|-- globals.css
+`-- layout.tsx
+
+components/
+|-- auth/
+|-- controls/
+|-- layout/
+`-- output/
+
+lib/
+|-- auth/
+|-- brave-search/
+|-- openrouter/
+|-- pdf/
+|-- rate-limit/
+`-- validation/
+
+public/
+`-- [logo and static assets]
 
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+|-- e2e/
+|-- integration/
+`-- unit/
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: [Document the exact directories affected by this
+feature, note any deviations from the default layout above, and justify them if
+they increase complexity.]
 
 ## Complexity Tracking
 
@@ -100,5 +111,5 @@ directories captured above]
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| [e.g., temporary cache layer] | [current need] | [why in-memory request flow is insufficient] |
+| [e.g., extra service module] | [specific problem] | [why direct route-level logic is insufficient] |

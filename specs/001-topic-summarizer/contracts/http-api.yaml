@@ -1,0 +1,159 @@
+openapi: 3.1.0
+info:
+  title: AI Topic Summarizer HTTP API
+  version: 0.1.0
+  description: >
+    Internal HTTP contract for the MVP Next.js Route Handlers that support
+    authenticated summarization and session bootstrap.
+servers:
+  - url: https://{deployment-host}
+    variables:
+      deployment-host:
+        default: localhost:3000
+paths:
+  /api/me:
+    get:
+      operationId: getCurrentUser
+      summary: Return the authenticated user snapshot for the current session
+      tags:
+        - auth
+      responses:
+        "200":
+          description: Session state resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authenticated
+                  - user
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    oneOf:
+                      - type: "null"
+                      - type: object
+                        required:
+                          - id
+                          - email
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+        "500":
+          description: Unexpected auth/session failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/summarize:
+    post:
+      operationId: createSummary
+      summary: Generate one grounded summary from live Brave Search results
+      tags:
+        - summaries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SummarizeRequest"
+      responses:
+        "200":
+          description: Summary generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - output
+                properties:
+                  output:
+                    type: string
+        "400":
+          description: Invalid request payload or invalid topic-only input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: User is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: User exceeded the daily summary quota
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream search or model provider failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    SummarizeRequest:
+      type: object
+      required:
+        - topic
+        - model
+        - mode
+        - length
+        - language
+      additionalProperties: false
+      properties:
+        topic:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: >
+            A topic phrase only. URLs, pasted article bodies, and file inputs
+            are invalid.
+        model:
+          type: string
+          enum:
+            - openai/gpt-oss-120b:free
+            - tencent/hy3-preview:free
+            - minimax/minimax-m2.5:free
+            - nvidia/nemotron-3-super-120b-a12b:free
+        mode:
+          type: string
+          enum:
+            - summary
+            - bullet-list
+            - one-liner
+            - mind-map
+            - meme
+        length:
+          type: integer
+          minimum: 0
+          maximum: 100
+        language:
+          type: string
+          const: en
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - unauthorized
+            - rate_limited
+            - weak_results
+            - search_failed
+            - model_failed
+            - unknown_error
+        message:
+          type: string
