@@ -158,7 +158,23 @@ export async function POST(request: Request) {
     );
   }
 
-  // No-persistence guard: the generated output is returned to the client only.
-  // It is never written to the database, logged, or stored server-side.
+  // ── 8. Persist to history ────────────────────────────────────────────────
+  // Fire-and-forget: a write failure must not block the response.
+  supabase
+    .from("summary_history")
+    .insert({
+      user_id: user.id,
+      topic,
+      mode,
+      model,
+      length,
+      output: result.output,
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.error("[/api/summarize] history insert error:", error);
+      }
+    });
+
   return NextResponse.json({ output: result.output });
 }

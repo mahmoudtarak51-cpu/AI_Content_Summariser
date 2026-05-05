@@ -15,6 +15,8 @@ export type OutputState =
 type OutputCardProps = {
   state: OutputState;
   downloadParams?: { topic: string; mode: string; model: string };
+  /** When true the internal "Output" heading is hidden (e.g. when shown inside a tab panel). */
+  hideHeader?: boolean;
 };
 
 /**
@@ -25,7 +27,7 @@ type OutputCardProps = {
  * - error:   Highlighted error message
  * - success: Delegated to OutputContent with PDF download button
  */
-export function OutputCard({ state, downloadParams }: OutputCardProps) {
+export function OutputCard({ state, downloadParams, hideHeader = false }: OutputCardProps) {
   const canDownload = state.status === "success" && downloadParams != null;
 
   // Build the PDF blob URL whenever a successful output is available.
@@ -65,19 +67,23 @@ export function OutputCard({ state, downloadParams }: OutputCardProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-base">Output</h2>
-        {canDownload && blobUrl && (
-          <a
-            href={blobUrl}
-            download="topic-summary.pdf"
-            role="button"
-            className="btn-ghost text-sm"
-          >
-            Download PDF
-          </a>
-        )}
-      </div>
+      {(!hideHeader || (canDownload && blobUrl)) && (
+        <div className="mb-4 flex items-center justify-between">
+          {!hideHeader && (
+            <h2 className="text-base font-semibold text-text-base">Output</h2>
+          )}
+          {canDownload && blobUrl && (
+            <a
+              href={blobUrl}
+              download="topic-summary.pdf"
+              role="button"
+              className="btn-ghost text-sm"
+            >
+              Download PDF
+            </a>
+          )}
+        </div>
+      )}
       <div
         className="flex-1"
         role="region"
